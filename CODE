@@ -1,0 +1,43 @@
+clc
+
+%LABELLED
+%Split dataset
+%Create training and testing data using the partitioned indices
+trainingLabel = 'C:\Users\Puteri Farzanah\Desktop\UTeM\SEMESTER 8\COMPUTER VISION\ASSIGNMENT\data\label\PixelLabelData';
+%testingLabel = 
+
+%ORIGINAL
+trainingImg = 'C:\Users\Puteri Farzanah\Desktop\UTeM\SEMESTER 8\COMPUTER VISION\ASSIGNMENT\data\image\train';
+testingImg = 'C:\Users\Puteri Farzanah\Desktop\UTeM\SEMESTER 8\COMPUTER VISION\ASSIGNMENT\data\image\test';
+
+%ImageDatastore
+imds = imageDatastore(trainingImg);
+
+%PixelLabelDatastore
+classNames = ["Sky", "Human", "Polybag", "Tree"]; 
+labelIDs = [1, 2, 3, 4];
+
+pxds = pixelLabelDatastore(trainingLabel, classNames, labelIDs);
+
+tbl = countEachLabel(pxds);
+
+totalNumberOfPixels = sum(tbl.PixelCount);
+frequency = tbl.PixelCount / totalNumberOfPixels;
+inverseFrequency = 1./frequency;
+
+%Combine imds and pxds
+cds = combine(imds,pxds);
+
+%NETWORK
+layers = [
+    imageInputLayer([1080 1920 3])
+    convolution2dLayer([3,3],64,'Padding',[1,1,1,1])
+    reluLayer
+    maxPooling2dLayer([2,2],'Stride',[2,2])
+    convolution2dLayer([3,3],64,'Padding',[1,1,1,1])
+    reluLayer
+    transposedConv2dLayer([4,4],64,'Stride',[2,2],'Cropping',[1,1,1,1])
+    convolution2dLayer([1,1],4)
+    softmaxLayer
+    pixelClassificationLayer('Classes',tbl.Name,'ClassWeights',inverseFrequency)
+    ];
