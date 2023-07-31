@@ -1,0 +1,147 @@
+classdef SegmentationGUI < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure            matlab.ui.Figure
+        TextArea            matlab.ui.control.TextArea
+        Label               matlab.ui.control.Label
+        FileNameEditField   matlab.ui.control.EditField
+        SegmentationButton  matlab.ui.control.Button
+        BrowseButton        matlab.ui.control.Button
+        UIAxes              matlab.ui.control.UIAxes
+    end
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Button pushed function: BrowseButton
+        function BrowseButtonPushed(app, event)
+             [filename, path] = uigetfile({'*.jpg'; '*.png'; '*.bmp'; '*.oct'}, 'Select File to Open');
+            if ~isequal(filename, 0)
+                app.FileNameEditField.Value = filename;
+
+                % Display the selected image in the UIAxes
+                img = imread(fullfile(path, filename));
+                imshow(img, 'Parent', app.UIAxes);
+            end
+        end
+
+        % Button pushed function: SegmentationButton
+        function SegmentationButtonPushed(app, event)
+            % Get the current image from the UIAxes
+            img = app.UIAxes.Children.CData;
+
+            % Check if an image is loaded in the UIAxes
+            if isempty(img)
+                errordlg('Please select an image first.', 'Error', 'modal');
+                return;
+            end
+
+            % Convert the image to grayscale
+            grayImg = rgb2gray(img);
+
+            % Perform image segmentation using thresholding
+            threshold = 128; % You can adjust the threshold value here
+            segmented_img = grayImg > threshold;
+
+            % Display the segmented image in the UIAxes
+            imshow(segmented_img, 'Parent', app.UIAxes);
+
+            % Stop timer and update the Label
+            elapsed_time = toc;
+            app.Label.Text = sprintf('Processing Time: %.2f seconds', elapsed_time);
+        end
+
+        % Value changed function: FileNameEditField
+        function FileNameEditFieldValueChanged(app, event)
+            value = app.FileNameEditField.Value;
+            
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.Position = [100 100 640 480];
+            app.UIFigure.Name = 'MATLAB App';
+
+            % Create UIAxes
+            app.UIAxes = uiaxes(app.UIFigure);
+            title(app.UIAxes, 'Image Segmentation')
+            app.UIAxes.Position = [33 106 574 287];
+
+            % Create BrowseButton
+            app.BrowseButton = uibutton(app.UIFigure, 'push');
+            app.BrowseButton.ButtonPushedFcn = createCallbackFcn(app, @BrowseButtonPushed, true);
+            app.BrowseButton.FontName = 'Century Gothic';
+            app.BrowseButton.FontSize = 14;
+            app.BrowseButton.FontWeight = 'bold';
+            app.BrowseButton.Position = [486 406 111 43];
+            app.BrowseButton.Text = 'Browse';
+
+            % Create SegmentationButton
+            app.SegmentationButton = uibutton(app.UIFigure, 'push');
+            app.SegmentationButton.ButtonPushedFcn = createCallbackFcn(app, @SegmentationButtonPushed, true);
+            app.SegmentationButton.FontName = 'Century Gothic';
+            app.SegmentationButton.FontSize = 14;
+            app.SegmentationButton.FontWeight = 'bold';
+            app.SegmentationButton.Position = [151 64 135 40];
+            app.SegmentationButton.Text = 'Segmentation';
+
+            % Create FileNameEditField
+            app.FileNameEditField = uieditfield(app.UIFigure, 'text');
+            app.FileNameEditField.ValueChangedFcn = createCallbackFcn(app, @FileNameEditFieldValueChanged, true);
+            app.FileNameEditField.FontSize = 14;
+            app.FileNameEditField.Placeholder = 'File location';
+            app.FileNameEditField.Position = [48 406 411 43];
+
+            % Create Label
+            app.Label = uilabel(app.UIFigure);
+            app.Label.HorizontalAlignment = 'center';
+            app.Label.FontName = 'Century Gothic';
+            app.Label.FontSize = 14;
+            app.Label.FontWeight = 'bold';
+            app.Label.Position = [48 23 341 31];
+            app.Label.Text = '00 : 00 : 00';
+
+            % Create TextArea
+            app.TextArea = uitextarea(app.UIFigure);
+            app.TextArea.FontSize = 14;
+            app.TextArea.Placeholder = 'Report';
+            app.TextArea.Position = [397 23 200 81];
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = SegmentationGUI
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end
